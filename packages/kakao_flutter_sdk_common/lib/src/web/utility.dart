@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:html';
+import 'dart:js_interop';
+import 'package:web/web.dart' hide Response;
 
 import 'package:dio/dio.dart';
 import 'package:kakao_flutter_sdk_common/src/util.dart';
@@ -12,7 +13,7 @@ bool isMobileDevice() {
 }
 
 void submitForm(String url, Map params, {String popupName = ''}) {
-  final form = document.createElement('form') as FormElement;
+  final form = document.createElement('form') as HTMLFormElement;
   form.setAttribute('accept-charset', 'utf-8');
   form.setAttribute('method', 'post');
   form.setAttribute('action', url);
@@ -20,7 +21,7 @@ void submitForm(String url, Map params, {String popupName = ''}) {
   form.setAttribute('style', 'display:none');
 
   params.forEach((key, value) {
-    final input = document.createElement('input') as InputElement;
+    final input = document.createElement('input') as HTMLInputElement;
     input.type = 'hidden';
     input.name = key;
     input.value = value is String ? value : jsonEncode(value);
@@ -31,8 +32,8 @@ void submitForm(String url, Map params, {String popupName = ''}) {
   form.remove();
 }
 
-IFrameElement createHiddenIframe(String transId, String source) {
-  return document.createElement('iframe') as IFrameElement
+HTMLIFrameElement createHiddenIframe(String transId, String source) {
+  return document.createElement('iframe') as HTMLIFrameElement
     ..id = transId
     ..name = transId
     ..src = source
@@ -56,15 +57,15 @@ EventListener addMessageEventListener(
             isiOS() &&
                 browser == Browser.kakaotalk &&
                 event.origin == window.origin)) {
-      completer.complete(event.data);
-      window.removeEventListener('message', callback);
+      completer.complete(event.data.toString());
+      window.removeEventListener('message', callback.jsify() as EventListener);
       afterReceive();
       return;
     }
   }
 
-  window.addEventListener('message', callback);
-  return callback;
+  window.addEventListener('message', callback.jsify() as EventListener);
+  return callback.jsify() as EventListener;
 }
 
 /// @nodoc
@@ -81,7 +82,7 @@ class Utility {
 
   static Future<String> _getVersionJson() async {
     final cacheBuster = DateTime.now().millisecondsSinceEpoch;
-    String baseUri = _removeEndSlash(window.document.baseUri!);
+    String baseUri = _removeEndSlash(window.document.baseURI);
     var dio = Dio()..options.baseUrl = baseUri;
     Response<String> response = await dio.get(
       '${Uri.parse(baseUri).path}/version.json',
@@ -99,7 +100,7 @@ class Utility {
   }
 }
 
-extension WindowExtension on WindowBase {
+extension WindowExtension on Window {
   void afterClosed(Function() action, {checkIntervalSecond = 1}) {
     Future.doWhile(() async {
       await Future.delayed(Duration(seconds: checkIntervalSecond));

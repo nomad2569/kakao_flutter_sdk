@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:html' as html;
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
@@ -30,18 +31,19 @@ void bindPageHideEvent(Timer timer) {
   listener = (event) {
     if (!_isPageVisible()) {
       timer.cancel();
-      html.window.removeEventListener('pagehide', listener);
-      html.window.removeEventListener('visibilitychange', listener);
+
+      JSFunction jsListener = listener!.jsify() as JSFunction;
+      web.window.removeEventListener('pagehide', jsListener);
+      web.window.removeEventListener('visibilitychange', jsListener);
     }
   };
 
-  html.window.addEventListener('pagehide', listener);
-  html.window.addEventListener('visibilitychange', listener);
+  JSFunction jsListener = listener!.jsify() as JSFunction;
+
+  web.window.addEventListener('pagehide', jsListener);
+  web.window.addEventListener('visibilitychange', jsListener);
 }
 
 bool _isPageVisible() {
-  if (html.document.hidden != null) {
-    return !html.document.hidden!;
-  }
-  return true;
+  return !web.document.hidden;
 }
